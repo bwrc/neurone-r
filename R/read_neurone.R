@@ -48,11 +48,13 @@ read.neurone <- function(datadir, session.number = 1, start = 0, data.length = N
     ## --------------------------------------------------
     recording <- new_recording()
 
-    recording$properties$time.start.raw <- session$TableSession$StartDateTime
-    recording$properties$time.start     <- parse_timestamp(session$TableSession$StartDateTime)
+    time_tmp <- get_session_start_and_end(session, session_number = session.number)
 
-    recording$properties$time.stop.raw  <- session$TableSession$StopDateTime
-    recording$properties$time.stop      <- parse_timestamp(session$TableSession$StopDateTime)
+    recording$properties$time.start.raw <- time_tmp$start_time_raw
+    recording$properties$time.start     <- time_tmp$start_time
+
+    recording$properties$time.stop.raw  <- time_tmp$stop_time_raw
+    recording$properties$time.stop      <- time_tmp$stop_time
 
     ## Set subject and casename information
     recording$properties$subject        <- session$TablePerson$PersonId

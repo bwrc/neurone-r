@@ -1,12 +1,13 @@
-Package: neurone
-Title: Read Physiologic Signal Data Recorded with a Mega Electronics neurOne Device.
+ xPackage: neurone
+Title: Read Physiologic Signal Data Recorded With a Mega Electronics neurOne Device.
 Version: 0.1.0
-Description: This package contains functions for reading physiologic data recorded
-    with a Mega Electronics Ltd neurOne device.
-Authors@R: c(person("Andreas", "Henelius", role = c("aut", "cre"), email =
-    "andreas.henelius@ttl.fi"))
+Description: This package contains functions for reading physiologic data
+    recorded with a Mega Electronics Ltd neurOne device.
+Authors@R: c(person("Andreas", "Henelius", role = c("aut", "cre"), email = "andreas.henelius@ttl.fi"),
+	   person("Finnish Institute of Occupational Health", role = c("cph")))
 Depends:
     R (>= 3.0.2),
     XML
 License: MIT + file LICENSE
 URL: https://github.com/bwrc/neurone-r
+RoxygenNote: 5.0.1

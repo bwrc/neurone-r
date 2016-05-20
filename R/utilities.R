@@ -1,3 +1,22 @@
+#' Get the start and end times of a particular session.
+#'
+#' @param session A list with the session information (read from an XML file).
+#' @param session_number The session number. Default is 1.
+#'
+#' @return The start and stop times (raw and POSIXct) of the session.
+#'
+#' @keywords internal
+get_session_start_and_end <- function(session, session_number = 1) {
+    ind <- which(names(session) == "TableSessionPhase")
+    session_order <- ind[order(unname(sapply(session[ind], function(i) parse_timestamp(i$StartDateTime))))]
+    ind_session <- session_order[session_number]
+
+    list("start_time" = parse_timestamp(session[[ind_session]]$StartDateTime),
+         "stop_time" = parse_timestamp(session[[ind_session]]$StopDateTime),
+         "start_time_raw" = session[[ind_session]]$StartDateTime,
+         "stop_time_raw" = session[[ind_session]]$StopDateTime)
+}
+
 #' Return a list of event files related to the given session number.
 #'
 #' @param datadir The directory containing the neurOne data
