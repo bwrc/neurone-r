@@ -1,4 +1,4 @@
- xPackage: neurone
+Package: neurone
 Title: Read Physiologic Signal Data Recorded With a Mega Electronics neurOne Device.
 Version: 0.1.0
 Description: This package contains functions for reading physiologic data
