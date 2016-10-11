@@ -404,6 +404,8 @@ read_events <- function(datadir, session.number = 1, samplingrate = NULL) {
         events <- events[, -ind]
     } else {
         ## No events present
+        close(f)
+
         events           <- as.data.frame(events)
         colnames(events) <- names(event.structure)
     }
