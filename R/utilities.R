@@ -330,7 +330,7 @@ read_session_data <- function(datadir, channel.list, channels, samplingrate, sta
 
     ## Create a structure for the data
     data <- matrix(nrow = 0, ncol = n.channels)
-    
+
     ## Read data associated with the given session
     for (f in files.data) {
         if (read.mode == "all")
@@ -346,13 +346,13 @@ read_session_data <- function(datadir, channel.list, channels, samplingrate, sta
 
     ## Pack the data into a list
     data <- data_matrix_to_list(data, channel.list, samplingrate)
-    
+
     data
 }
 
 
 #' Read events from a binary neurOne event file.
-#' 
+#'
 #' @param datadir The directory containing the neurOne data.
 #' @param session.number The session number. Default is 1.
 #' @param samplingrate The sampling rate.
@@ -377,31 +377,36 @@ read_events <- function(datadir, session.number = 1, samplingrate = NULL) {
     events <- matrix(nrow = n.events, ncol = 16)
     event.structure <- get_event_structure()
 
-    for (i in seq.int(n.events))
-        events[i,] <- parse_event(readBin(f, "raw", size = 1, n = 88, signed = FALSE, endian = "little"), event.structure)
+    if (f.info$size > 0) {
+        for (i in seq.int(n.events))
+            events[i,] <- parse_event(readBin(f, "raw", size = 1, n = 88, signed = FALSE, endian = "little"), event.structure)
 
-    close(f)
+        close(f)
 
-    colnames(events) <- names(event.structure)
-    events           <- as.data.frame(events)
+        events           <- as.data.frame(events)
+        colnames(events) <- names(event.structure)
 
-    ## set the source port
-    events$SourcePort <- ordered(sapply(events$SourcePort, set_source_port), levels = c("Unknown", "A", "B", "EightBit"))
+        ## set the source port
+        events$SourcePort <- ordered(sapply(events$SourcePort, set_source_port), levels = c("Unknown", "A", "B", "EightBit"))
 
-    ## set the event type
-    for (i in seq.int(nrow(events)))
-        events[i,] <- set_code_event_type(events[i,], files.events)
+        ## set the event type
+        for (i in seq.int(nrow(events)))
+            events[i,] <- set_code_event_type(events[i,], files.events)
 
-    ## Add start and stop times of events if the sampling rate is given
-    if (! is.null(samplingrate)) {
-        events$StartTime <- events$StartSampleIndex / samplingrate
-        events$StopTime  <- events$StopSampleIndex / samplingrate
+        ## Add start and stop times of events if the sampling rate is given
+        if (! is.null(samplingrate)) {
+            events$StartTime <- events$StartSampleIndex / samplingrate
+            events$StopTime  <- events$StopSampleIndex / samplingrate
+        }
+
+        ## do not include event fields reserved for future use (RFU)
+        ind    <- grep("RFU?", names(events))
+        events <- events[, -ind]
+    } else {
+        ## No events present
+        events           <- as.data.frame(events)
+        colnames(events) <- names(event.structure)
     }
-
-    ## do not include event fields reserved for future use (RFU)
-    ind    <- grep("RFU?", names(events))
-    events <- events[, -ind]
-
     events
 }
 
@@ -575,7 +580,7 @@ data_matrix_to_list <- function(data, channel_list, samplingrate) {
 #' The recording structure is a list.
 #'
 #' @return An empty recording structure.
-#' 
+#'
 #' @export
 new_recording <- function() {
     ## Create containers
@@ -584,7 +589,7 @@ new_recording <- function() {
     recording$signal            <- list()
     recording$events            <- list()
     recording$properties$header <- list()
-    
+
     recording$properties$time.start.raw <- NA
     recording$properties$time.start     <- NA
     recording$properties$time.stop.raw  <- NA
