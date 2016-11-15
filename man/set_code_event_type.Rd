@@ -4,12 +4,12 @@
 \alias{set_code_event_type}
 \title{Map the numeric event type to a string and set the event code.}
 \usage{
-set_code_event_type(event, files.events)
+set_code_event_type(event, files_events)
 }
 \arguments{
 \item{event}{An event (as a one-row data frame)}
 
-\item{files.events}{A list containing the event files. See \code{\link{get_event_files}}}
+\item{files_events}{A list containing the event files. See \code{\link{get_event_files}}}
 }
 \value{
 The event with the type and code modified.

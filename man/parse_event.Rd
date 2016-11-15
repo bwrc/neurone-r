@@ -4,12 +4,12 @@
 \alias{parse_event}
 \title{Parse a neurOne event.}
 \usage{
-parse_event(data, event.structure)
+parse_event(data, event_structure)
 }
 \arguments{
 \item{data}{A list of 88 bytes containing the event data.}
 
-\item{event.structure}{The structure of the event. See \code{\link{get_event_structure}}}
+\item{eventd_.structure}{The structure of the event. See \code{\link{get_event_structure}}}
 }
 \value{
 The source port as a string.

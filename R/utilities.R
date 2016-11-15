@@ -364,34 +364,37 @@ read_session_data <- function(datadir, channel.list, channels, samplingrate, sta
 #' @keywords internal
 read_events <- function(datadir, session.number = 1, samplingrate = NULL) {
     ## get the event files
-    files.events <- get_event_files(datadir, session.number = session.number)
+    files_events <- get_event_files(datadir, session.number = session.number)
 
     ## open the data file for reading
-    f <- file(files.events[["events"]], "rb")
+    f <- file(files_events[["events"]], "rb")
 
     ## get file information
-    f.info    <- file.info(files.events[["events"]])
+    f.info    <- file.info(files_events[["events"]])
     n.events  <- f.info$size / 88
 
     ## read the event data
     events <- matrix(nrow = n.events, ncol = 16)
-    event.structure <- get_event_structure()
+    event_structure <- get_event_structure()
 
     if (f.info$size > 0) {
         for (i in seq.int(n.events))
-            events[i,] <- parse_event(readBin(f, "raw", size = 1, n = 88, signed = FALSE, endian = "little"), event.structure)
+            events[i,] <- parse_event(readBin(f, "raw", size = 1, n = 88, signed = FALSE, endian = "little"), event_structure)
 
         close(f)
 
         events           <- as.data.frame(events)
-        colnames(events) <- names(event.structure)
+        colnames(events) <- names(event_structure)
 
+        ## Add extra column for the event description
+        events$Description <- NA
+        
         ## set the source port
-        events$SourcePort <- ordered(sapply(events$SourcePort, set_source_port), levels = c("Unknown", "A", "B", "EightBit"))
+        events$SourcePort <- factor(sapply(events$SourcePort, set_source_port), levels = c("Unknown", "A", "B", "EightBit", "Manual"))
 
         ## set the event type
         for (i in seq.int(nrow(events)))
-            events[i,] <- set_code_event_type(events[i,], files.events)
+            events[i,] <- set_code_event_type(events[i,], files_events)
 
         ## Add start and stop times of events if the sampling rate is given
         if (! is.null(samplingrate)) {
@@ -407,7 +410,7 @@ read_events <- function(datadir, session.number = 1, samplingrate = NULL) {
         close(f)
 
         events           <- as.data.frame(events)
-        colnames(events) <- names(event.structure)
+        colnames(events) <- names(event_structure)
     }
     events
 }
@@ -441,19 +444,19 @@ get_event_structure <- function() {
 #' Parse a neurOne event.
 #'
 #' @param data A list of 88 bytes containing the event data.
-#' @param event.structure The structure of the event. See \code{\link{get_event_structure}}
+#' @param eventd_.structure The structure of the event. See \code{\link{get_event_structure}}
 #'
 #' @return The source port as a string.
 #'
 #' @keywords internal
-parse_event <- function(data, event.structure) {
+parse_event <- function(data, event_structure) {
     event <- matrix(nrow = 1, ncol = 16)
 
     bytes.start <- 1
 
     i <- 1
-    for (event.field in names(event.structure)) {
-        n.bytes     <- event.structure[[event.field]]$n.bytes
+    for (event.field in names(event_structure)) {
+        n.bytes     <- event_structure[[event.field]]$n.bytes
 
         event[1, i] <- readBin(data[bytes.start:(bytes.start+n.bytes - 1)], "integer", size = n.bytes, n = 1, signed = TRUE)
 
@@ -475,9 +478,11 @@ parse_event <- function(data, event.structure) {
 #' @keywords internal
 set_source_port <- function(x) {
     list("0" = "Unknown",
-         "1" = "A",
-         "2" = "B",
-         "3" = "EightBit")[[as.character(x)]]
+         "1" = "Stimulation",
+         "2" = "Video",
+         "4" = "EightBit",
+         "5" = "Out",
+         "6" = "Manual")[[as.character(x)]]
 }
 
 
@@ -487,12 +492,12 @@ set_source_port <- function(x) {
 #' the contents as the event type.
 #'
 #' @param event An event (as a one-row data frame)
-#' @param files.events A list containing the event files. See \code{\link{get_event_files}}
+#' @param files_events A list containing the event files. See \code{\link{get_event_files}}
 #'
 #' @return The event with the type and code modified.
 #'
 #' @keywords internal
-set_code_event_type <- function(event, files.events) {
+set_code_event_type <- function(event, files_events) {
 
     if (event[["Type"]] == 0) {
         event[["Type"]] <- paste(event[["SourcePort"]], "Unknown", sep = " - ")
@@ -518,16 +523,30 @@ set_code_event_type <- function(event, files.events) {
         event[["Code"]] <- 259
     }
     else if (event[["Type"]] == 6) {
-        f <- file(files.events[["eventdata"]], "rb")
-
-        seek(f, where = event[["DataOffset"]] / 2, origin = "start")
-
-        event[["Type"]] <- readBin(f, what = character(), n = 1, size = (event[["DataLength"]] / 2))
-        event[["Code"]] <- 260
-        close(f)
+        event[["Type"]]        <- read_event_data(filename = files_events[["eventdata"]], data_offset = event[["DataOffset"]], data_length = event[["DataLength"]])
+        event[["Description"]] <- read_event_data(filename = files_events[["eventdescriptions"]], data_offset = event[["DescriptionOffset"]], data_length = event[["DescriptionLength"]])
+        event[["Code"]]        <- 260
     }
 
     event
+}
+
+
+#' Read event data and description
+#'
+#' @param filename The name of the file with the event data
+#' @param data_offset Offset of data from the beginning of the file
+#' @param data_length The length of the data to read
+#'
+#' @return A character containing the event data
+#'
+#' @keywords internal
+read_event_data <- function(filename, data_offset, data_length) {
+        f <- file(filename, "rb")
+        seek(f, where = data_offset, origin = "start")
+        tmp <- readBin(f, what = "raw", n = data_length, size = 1)
+        close(f)
+        readBin(tmp[-which(tmp == as.raw(0))], character())
 }
 
 
